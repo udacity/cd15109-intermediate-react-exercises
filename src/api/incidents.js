@@ -25,3 +25,30 @@ export async function fetchIncidentActivityById(id) {
 
   return Array.isArray(all) ? all.filter((e) => e.incidentId === incidentId) : [];
 }
+
+export async function createIncident(payload) {
+  if (!payload?.title) {
+    throw new Error("Title is required");
+  }
+
+  return {
+    id: Date.now(),
+    title: payload.title,
+    status: "open",
+    priority: payload.priority ?? "medium",
+  };
+}
+
+export async function addIncidentComment({ incidentId, message }) {
+  if (!incidentId || !message) {
+    throw new Error("Invalid comment payload");
+  }
+
+  return {
+    id: Date.now(),
+    incidentId,
+    type: "comment",
+    message,
+    at: new Date().toISOString(),
+  };
+}

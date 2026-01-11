@@ -1,10 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
-import { RootLayout } from "./ui/RootLayout.jsx";
-import { IncidentsPage } from "./pages/IncidentsPage.jsx";
-import { IncidentDetailPage } from "./pages/IncidentDetailPage.jsx";
-import { ApprovalsPage } from "./pages/ApprovalsPage.jsx";
-import { LoginPage } from "./pages/LoginPage.jsx";
-import { NotFoundPage } from "./pages/NotFoundPage.jsx";
+
+import { RootLayout } from "@/ui/RootLayout";
+import { IncidentsPage } from "@/pages/IncidentsPage";
+import { IncidentDetailPage } from "@/pages/IncidentDetailPage";
+import { ApprovalsPage } from "@/pages/ApprovalsPage";
+import { LoginPage } from "@/pages/LoginPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
+import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
@@ -13,7 +15,14 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <IncidentsPage /> },
       { path: "incidents/:id", element: <IncidentDetailPage /> },
-      { path: "approvals", element: <ApprovalsPage /> },
+      {
+        path: "approvals",
+        element: (
+          <ProtectedRoute title="Approvals">
+            <ApprovalsPage />
+          </ProtectedRoute>
+        ),
+      },
       { path: "login", element: <LoginPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],

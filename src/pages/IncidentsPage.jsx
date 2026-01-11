@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useDeferredValue } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
@@ -38,7 +38,12 @@ export function IncidentsPage() {
   const status = normalizeFromList(searchParams.get("status"), STATUS_OPTIONS, "all");
   const q = (searchParams.get("q") ?? "").trim();
 
-  const { data, isLoading, isError, error } = useIncidents({ status, q });
+  const deferredQ = useDeferredValue(q);
+
+  const { data, isLoading, isError, error } = useIncidents({
+    status,
+    q: deferredQ,
+  });
 
   const [newTitle, setNewTitle] = useState("");
   const createMutation = useCreateIncident();
@@ -114,7 +119,9 @@ export function IncidentsPage() {
     <div className="space-y-5">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
-        <p className="text-sm text-muted-foreground">Mutations model user-initiated writes with clear loading and feedback.</p>
+        <p className="text-sm text-muted-foreground">
+          Deferred updates keep the UI responsive while filtering.
+        </p>
       </div>
 
       <Card className="p-4">
@@ -141,7 +148,11 @@ export function IncidentsPage() {
           </Button>
         </div>
 
-        <select className="h-9 rounded-md border bg-background px-3 text-sm" value={sort} onChange={(e) => setSort(e.target.value)}>
+        <select
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
@@ -169,20 +180,19 @@ export function IncidentsPage() {
           ))}
         </div>
       ) : sorted.length === 0 ? (
-        <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No incidents found.</div>
+        <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
+          No incidents found.
+        </div>
       ) : (
         <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "space-y-3"}>
-          {sorted.map((incident) => {
-            const isSelected = selectedIdSet.has(String(incident.id));
-            return (
-              <IncidentCard
-                key={incident.id}
-                incident={incident}
-                selected={isSelected}
-                onToggleSelect={toggleSelectById}
-              />
-            );
-          })}
+          {sorted.map((incident) => (
+            <IncidentCard
+              key={incident.id}
+              incident={incident}
+              selected={selectedIdSet.has(String(incident.id))}
+              onToggleSelect={toggleSelectById}
+            />
+          ))}
         </div>
       )}
 

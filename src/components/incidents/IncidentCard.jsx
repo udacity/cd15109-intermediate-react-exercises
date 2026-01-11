@@ -7,9 +7,7 @@ import { PriorityPill } from "@/components/incidents/PriorityPill";
 import { queryKeys } from "@/queries/queryKeys";
 import { fetchIncidentById } from "@/api/incidents";
 
-function IncidentCardImpl({ incident, selected, onToggleSelect }) {
-  console.count(`IncidentCard render: ${incident.id}`);
-  
+function IncidentCardImpl({ incident, selected, onToggleSelect }) {  
   const queryClient = useQueryClient();
 
   const prefetch = useCallback(() => {

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useReducer } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIncidents } from "@/queries/hooks";
+import { uiReducer, initialUiState, UI_ACTIONS } from "@/state/uiReducer";
 
 const STATUS_OPTIONS = ["all", "open", "triage", "approved"];
 const PRIORITY_OPTIONS = ["all", "low", "medium", "high"];
@@ -19,21 +20,8 @@ function IncidentCardSkeleton() {
   return (
     <div className="rounded-xl border bg-card p-4">
       <div className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-5 w-56" />
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Skeleton className="h-5 w-20 rounded-full" />
-            <Skeleton className="h-5 w-20 rounded-full" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-4 w-12" />
-        </div>
+        <Skeleton className="h-5 w-56" />
+        <Skeleton className="h-4 w-40" />
       </div>
     </div>
   );
@@ -41,13 +29,13 @@ function IncidentCardSkeleton() {
 
 export function IncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [uiState, dispatch] = useReducer(uiReducer, initialUiState);
 
   const status = normalizeFromList(searchParams.get("status"), STATUS_OPTIONS, "all");
+  const priority = normalizeFromList(searchParams.get("priority"), PRIORITY_OPTIONS, "all");
   const q = (searchParams.get("q") ?? "").trim();
 
-  const priority = normalizeFromList(searchParams.get("priority"), PRIORITY_OPTIONS, "all");
-
-  const { data, isPending, isError, error, refetch, isFetching } = useIncidents({
+  const { data, isPending, isError, error } = useIncidents({
     status,
     q,
   });
@@ -74,68 +62,49 @@ export function IncidentsPage() {
   }
 
   if (isError) {
-    const message = error?.message || "Something went wrong while loading incidents.";
-    toast.error("Couldn’t load incidents", { description: message });
-
-    return (
-      <div className="space-y-5">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
-          <p className="text-sm text-muted-foreground">
-            We hit an error while loading data. Try again.
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-card p-6">
-          <div className="space-y-3">
-            <div className="text-sm">
-              <span className="font-medium">Error:</span>{" "}
-              <span className="text-muted-foreground">{message}</span>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={() => refetch()}>
-                Retry
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => setSearchParams({})}>
-                Clear filters
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    toast.error("Couldn’t load incidents", {
+      description: error?.message || "Unknown error",
+    });
   }
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
+      <div className="flex items-start justify-between">
+        <div>
           <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
           <p className="text-sm text-muted-foreground">
-            Status and search are synced to the URL and cached by query key. Priority stays a UI filter for now.
+            Server state is handled by React Query. UI preferences live in a reducer.
           </p>
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => refetch()}
-          disabled={isPending || isFetching}
-        >
-          {isFetching ? "Refreshing…" : "Refresh"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant={uiState.view === "grid" ? "default" : "secondary"}
+            onClick={() =>
+              dispatch({ type: UI_ACTIONS.SET_VIEW, payload: "grid" })
+            }
+          >
+            Grid
+          </Button>
+          <Button
+            variant={uiState.view === "list" ? "default" : "secondary"}
+            onClick={() =>
+              dispatch({ type: UI_ACTIONS.SET_VIEW, payload: "list" })
+            }
+          >
+            List
+          </Button>
+        </div>
       </div>
 
       <section className="grid gap-3 rounded-xl border bg-card p-4">
-        <div className="grid gap-3 md:grid-cols-6 md:items-end">
+        <div className="grid gap-3 md:grid-cols-6">
           <label className="grid gap-1 md:col-span-2">
             <span className="text-sm font-medium">Status</span>
             <select
-              className="h-9 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="h-9 rounded-md border bg-background px-3 text-sm"
               value={status}
               onChange={(e) => updateParam("status", e.target.value)}
-              disabled={isPending}
             >
               {STATUS_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -148,10 +117,9 @@ export function IncidentsPage() {
           <label className="grid gap-1 md:col-span-2">
             <span className="text-sm font-medium">Priority</span>
             <select
-              className="h-9 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="h-9 rounded-md border bg-background px-3 text-sm"
               value={priority}
               onChange={(e) => updateParam("priority", e.target.value)}
-              disabled={isPending}
             >
               {PRIORITY_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -167,52 +135,37 @@ export function IncidentsPage() {
               value={q}
               onChange={(e) => updateParam("q", e.target.value)}
               placeholder="Search by title or ID…"
-              disabled={isPending}
             />
           </label>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium text-foreground">{visible.length}</span>
-            {priority !== "all" ? (
-              <>
-                {" "}
-                <span className="text-muted-foreground">after priority filter</span>
-              </>
-            ) : null}
-          </div>
-
-          <Button variant="secondary" type="button" onClick={() => setSearchParams({})}>
-            Clear filters
-          </Button>
         </div>
       </section>
 
       {isPending ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <IncidentCardSkeleton key={i} />
           ))}
         </div>
-      ) : visible.length === 0 ? (
-        <div className="grid place-items-center rounded-xl border bg-card p-10 text-center">
-          <div className="max-w-md space-y-2">
-            <div className="text-lg font-semibold">No incidents found</div>
-            <div className="text-sm text-muted-foreground">
-              Try changing filters or clearing your search.
-            </div>
-          </div>
-
-          <Button className="mt-4" type="button" onClick={() => setSearchParams({})}>
-            Reset
-          </Button>
-        </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          className={
+            uiState.view === "grid"
+              ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+              : "space-y-3"
+          }
+        >
           {visible.map((incident) => (
-            <IncidentCard key={incident.id} incident={incident} />
+            <IncidentCard
+              key={incident.id}
+              incident={incident}
+              selected={uiState.selectedIds.includes(incident.id)}
+              onToggleSelect={() =>
+                dispatch({
+                  type: UI_ACTIONS.TOGGLE_SELECTED,
+                  payload: incident.id,
+                })
+              }
+            />
           ))}
         </div>
       )}

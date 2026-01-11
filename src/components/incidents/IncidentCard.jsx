@@ -6,7 +6,7 @@ import { PriorityPill } from "@/components/incidents/PriorityPill";
 import { queryKeys } from "@/queries/queryKeys";
 import { fetchIncidentById } from "@/api/incidents";
 
-export function IncidentCard({ incident }) {
+export function IncidentCard({ incident, selected, onToggleSelect }) {
   const queryClient = useQueryClient();
 
   function prefetch() {
@@ -18,15 +18,24 @@ export function IncidentCard({ incident }) {
   }
 
   return (
-    <Card className="transition-shadow hover:shadow-sm focus-within:shadow-sm">
+    <Card
+      className={`transition-shadow ${
+        selected ? "ring-2 ring-ring" : ""
+      }`}
+      onClick={onToggleSelect}
+    >
       <CardHeader className="space-y-1">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">Incident #{incident.id}</div>
-            <div className="truncate text-base font-semibold">{incident.title}</div>
+          <div>
+            <div className="text-xs text-muted-foreground">
+              Incident #{incident.id}
+            </div>
+            <div className="text-base font-semibold">
+              {incident.title}
+            </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex items-center gap-2">
             <StatusBadge status={incident.status} />
             <PriorityPill priority={incident.priority} />
           </div>
@@ -35,14 +44,15 @@ export function IncidentCard({ incident }) {
 
       <CardContent className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          View incident details and activity
+          View incident details
         </div>
 
         <Link
           to={`/incidents/${incident.id}`}
           onMouseEnter={prefetch}
           onFocus={prefetch}
-          className="text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="text-sm font-medium underline-offset-4 hover:underline"
+          onClick={(e) => e.stopPropagation()}
         >
           Open
         </Link>

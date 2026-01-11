@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIncidents } from "@/queries/hooks";
+import { useAppDispatch } from "@/state/AppStateProvider";
 import { UI_ACTIONS } from "@/state/uiReducer";
-import { getSelectedCount } from "@/state/uiSelectors";
-import { useAppDispatch, useAppState } from "@/state/AppStateProvider";
+import {
+  useQueueStats,
+  useSelectedCount,
+  useSelectedIds,
+  useSortMode,
+  useViewMode,
+} from "@/state/selectorHooks";
 
 const STATUS_OPTIONS = ["all", "open", "triage", "approved"];
 const PRIORITY_OPTIONS = ["all", "low", "medium", "high"];
@@ -44,8 +50,13 @@ function priorityRank(priority) {
 export function IncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const uiState = useAppState();
   const dispatch = useAppDispatch();
+
+  const view = useViewMode();
+  const sort = useSortMode();
+  const selectedIds = useSelectedIds();
+  const selectedCount = useSelectedCount();
+  const queueStats = useQueueStats();
 
   const status = normalizeFromList(searchParams.get("status"), STATUS_OPTIONS, "all");
   const priority = normalizeFromList(searchParams.get("priority"), PRIORITY_OPTIONS, "all");
@@ -65,25 +76,23 @@ export function IncidentsPage() {
   const sorted = useMemo(() => {
     const list = [...priorityFiltered];
 
-    if (uiState.sort === "newest") {
+    if (sort === "newest") {
       list.sort((a, b) => Number(b.id) - Number(a.id));
       return list;
     }
 
-    if (uiState.sort === "oldest") {
+    if (sort === "oldest") {
       list.sort((a, b) => Number(a.id) - Number(b.id));
       return list;
     }
 
-    if (uiState.sort === "priority") {
+    if (sort === "priority") {
       list.sort((a, b) => priorityRank(b.priority) - priorityRank(a.priority));
       return list;
     }
 
     return list;
-  }, [priorityFiltered, uiState.sort]);
-
-  const selectedCount = getSelectedCount(uiState);
+  }, [priorityFiltered, sort]);
 
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams);
@@ -97,12 +106,12 @@ export function IncidentsPage() {
     setSearchParams(next);
   }
 
-  function setView(view) {
-    dispatch({ type: UI_ACTIONS.SET_VIEW, payload: view });
+  function setView(nextView) {
+    dispatch({ type: UI_ACTIONS.SET_VIEW, payload: nextView });
   }
 
-  function setSort(sort) {
-    dispatch({ type: UI_ACTIONS.SET_SORT, payload: sort });
+  function setSort(nextSort) {
+    dispatch({ type: UI_ACTIONS.SET_SORT, payload: nextSort });
   }
 
   function clearSelection() {
@@ -116,11 +125,13 @@ export function IncidentsPage() {
     });
   }
 
-  if (isError) {
+  useEffect(() => {
+    if (!isError) return;
+
     toast.error("Couldn’t load incidents", {
       description: error?.message || "Unknown error",
     });
-  }
+  }, [isError, error]);
 
   return (
     <div className="space-y-5">
@@ -128,20 +139,20 @@ export function IncidentsPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
           <p className="text-sm text-muted-foreground">
-            Shared UI state is now provided by context instead of prop drilling.
+            UI reads derived state via selector hooks, not raw context shape.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 rounded-lg border bg-card p-1">
             <Button
-              variant={uiState.view === "grid" ? "default" : "secondary"}
+              variant={view === "grid" ? "default" : "secondary"}
               onClick={() => setView("grid")}
             >
               Grid
             </Button>
             <Button
-              variant={uiState.view === "list" ? "default" : "secondary"}
+              variant={view === "list" ? "default" : "secondary"}
               onClick={() => setView("list")}
             >
               List
@@ -152,7 +163,7 @@ export function IncidentsPage() {
             <span className="sr-only">Sort</span>
             <select
               className="h-9 rounded-md border bg-background px-3 text-sm"
-              value={uiState.sort}
+              value={sort}
               onChange={(e) => setSort(e.target.value)}
             >
               {SORT_OPTIONS.map((opt) => (
@@ -211,17 +222,17 @@ export function IncidentsPage() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-muted-foreground">
-            Showing{" "}
-            <span className="font-medium text-foreground">{sorted.length}</span>
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">
+              Showing <span className="font-medium text-foreground">{sorted.length}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {queueStats.viewLabel} · {queueStats.sortLabel} · Selected{" "}
+              <span className="font-medium text-foreground">{queueStats.selectedCount}</span>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="text-xs text-muted-foreground">
-              Selected{" "}
-              <span className="font-medium text-foreground">{selectedCount}</span>
-            </div>
-
             <Button
               type="button"
               variant="secondary"
@@ -267,18 +278,12 @@ export function IncidentsPage() {
           </Button>
         </div>
       ) : (
-        <div
-          className={
-            uiState.view === "grid"
-              ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-              : "space-y-3"
-          }
-        >
+        <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "space-y-3"}>
           {sorted.map((incident) => (
             <IncidentCard
               key={incident.id}
               incident={incident}
-              selected={uiState.selectedIds.includes(incident.id)}
+              selected={selectedIds.includes(incident.id)}
               onToggleSelect={() =>
                 dispatch({
                   type: UI_ACTIONS.TOGGLE_SELECTED,

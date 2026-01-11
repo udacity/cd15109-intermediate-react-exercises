@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useIncidentQuery } from "@/queries/useIncidentQuery";
+import { useIncident } from "@/queries/hooks";
 
 function DetailSkeleton() {
   return (
@@ -34,7 +34,7 @@ function DetailSkeleton() {
 
 export function IncidentDetailPage() {
   const { id } = useParams();
-  const { data, isPending, isError, error } = useIncidentQuery(id);
+  const { data, isPending, isError, error } = useIncident(id);
 
   if (isPending) {
     return <DetailSkeleton />;
@@ -91,9 +91,7 @@ export function IncidentDetailPage() {
             </div>
 
             <div className="text-sm text-muted-foreground">
-              This page is powered by a dedicated React Query hook and will
-              later be extended with real metadata, comments, and activity
-              history.
+              This page is powered by a standardized query key and custom hooks.
             </div>
           </CardContent>
         </Card>

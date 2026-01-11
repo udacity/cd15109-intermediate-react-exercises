@@ -5,7 +5,7 @@ import { IncidentCard } from "@/components/incidents/IncidentCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useIncidentsQuery } from "@/queries/useIncidentsQuery";
+import { useIncidents } from "@/queries/hooks";
 
 const STATUS_OPTIONS = ["all", "open", "investigating", "resolved"];
 const PRIORITY_OPTIONS = ["all", "low", "medium", "high"];
@@ -55,7 +55,7 @@ export function IncidentsPage() {
   const q = (searchParams.get("q") ?? "").trim();
 
   const { data, isPending, isError, error, refetch, isFetching } =
-    useIncidentsQuery();
+    useIncidents();
 
   const incidents = useMemo(() => {
     return Array.isArray(data) ? data : [];

@@ -1,4 +1,8 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { IncidentCard } from "@/components/incidents/IncidentCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const INCIDENTS = [
   {
@@ -54,137 +58,129 @@ export function IncidentsPage() {
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams);
 
-    // Keep URLs clean: if set to "all" or empty, remove the param.
     const shouldRemove = value === "" || value == null || value === "all";
+    if (shouldRemove) next.delete(key);
+    else next.set(key, value);
 
-    if (shouldRemove) {
-      next.delete(key);
-    } else {
-      next.set(key, value);
-    }
-
-    // If q is cleared, delete it instead of leaving q=
-    if (key === "q" && value.trim() === "") {
-      next.delete("q");
-    }
+    if (key === "q" && value.trim() === "") next.delete("q");
 
     setSearchParams(next);
   }
 
-  const filtered = INCIDENTS.filter((incident) => {
-    const matchesStatus = status === "all" || incident.status === status;
-    const matchesPriority =
-      priority === "all" || incident.priority === priority;
+  const filtered = useMemo(() => {
+    return INCIDENTS.filter((incident) => {
+      const matchesStatus = status === "all" || incident.status === status;
+      const matchesPriority =
+        priority === "all" || incident.priority === priority;
 
-    const matchesQuery =
-      q === "" ||
-      incident.title.toLowerCase().includes(q.toLowerCase()) ||
-      String(incident.id).includes(q);
+      const matchesQuery =
+        q === "" ||
+        incident.title.toLowerCase().includes(q.toLowerCase()) ||
+        String(incident.id).includes(q);
 
-    return matchesStatus && matchesPriority && matchesQuery;
-  });
+      return matchesStatus && matchesPriority && matchesQuery;
+    });
+  }, [status, priority, q]);
 
   return (
-    <div style={{ display: "grid", gap: "12px" }}>
-      <h1 style={{ margin: 0 }}>Incidents</h1>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold leading-tight">Incidents</h1>
+        <p className="text-sm text-muted-foreground">
+          Filters are URL-driven. Try refresh, back/forward, or copy the URL.
+        </p>
+      </div>
 
-      <p style={{ margin: 0, color: "#555" }}>
-        Filters on this page are URL-driven using search params.
-      </p>
+      {/* Filters */}
+      <section className="grid gap-3 rounded-xl border bg-card p-4">
+        <div className="grid gap-3 md:grid-cols-4 md:items-end">
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">Status</span>
+            <select
+              className="h-9 rounded-md border bg-background px-3 text-sm"
+              value={status}
+              onChange={(e) => updateParam("status", e.target.value)}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
 
-      <section
-        style={{
-          display: "flex",
-          gap: "12px",
-          flexWrap: "wrap",
-          alignItems: "end",
-          padding: "12px",
-          border: "1px solid #eee",
-          borderRadius: "12px",
-        }}
-      >
-        <label style={{ display: "grid", gap: "6px" }}>
-          <span>Status</span>
-          <select
-            value={status}
-            onChange={(e) => updateParam("status", e.target.value)}
+          <label className="grid gap-1">
+            <span className="text-sm font-medium">Priority</span>
+            <select
+              className="h-9 rounded-md border bg-background px-3 text-sm"
+              value={priority}
+              onChange={(e) => updateParam("priority", e.target.value)}
+            >
+              {PRIORITY_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-1 md:col-span-2">
+            <span className="text-sm font-medium">Search</span>
+            <Input
+              value={q}
+              onChange={(e) => updateParam("q", e.target.value)}
+              placeholder="Search by title or ID…"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">
+            Showing{" "}
+            <span className="font-medium text-foreground">
+              {filtered.length}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-foreground">
+              {INCIDENTS.length}
+            </span>
+          </div>
+
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => setSearchParams({})}
           >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: "grid", gap: "6px" }}>
-          <span>Priority</span>
-          <select
-            value={priority}
-            onChange={(e) => updateParam("priority", e.target.value)}
-          >
-            {PRIORITY_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label style={{ display: "grid", gap: "6px", minWidth: "220px" }}>
-          <span>Search</span>
-          <input
-            value={q}
-            onChange={(e) => updateParam("q", e.target.value)}
-            placeholder="Search by title or ID…"
-          />
-        </label>
-
-        <button
-          type="button"
-          onClick={() => setSearchParams({})}
-          style={{ height: "fit-content" }}
-        >
-          Clear
-        </button>
+            Clear filters
+          </Button>
+        </div>
       </section>
 
-      <div style={{ display: "grid", gap: "8px" }}>
-        {filtered.length === 0 ? (
-          <div style={{ color: "#555" }}>No incidents match these filters.</div>
-        ) : (
-          filtered.map((incident) => (
-            <div
-              key={incident.id}
-              style={{
-                padding: "12px",
-                border: "1px solid #eee",
-                borderRadius: "12px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "12px",
-              }}
-            >
-              <div style={{ display: "grid", gap: "4px" }}>
-                <div style={{ fontWeight: 700 }}>
-                  #{incident.id} — {incident.title}
-                </div>
-                <div style={{ color: "#555", fontSize: "14px" }}>
-                  status: {incident.status} · priority: {incident.priority}
-                </div>
-              </div>
-
-              <Link to={`/incidents/${incident.id}`}>Open</Link>
+      {/* Results */}
+      {filtered.length === 0 ? (
+        <div className="grid place-items-center rounded-xl border bg-card p-10 text-center">
+          <div className="space-y-2">
+            <div className="text-lg font-semibold">No incidents found</div>
+            <div className="text-sm text-muted-foreground">
+              Try clearing filters or adjusting your search.
             </div>
-          ))
-        )}
-      </div>
+          </div>
 
-      {/* Keep one explicit example link for learners who want to see the URL */}
-      <div style={{ marginTop: "6px", color: "#555", fontSize: "14px" }}>
-        Example URL: <code>?status=open&amp;priority=high&amp;q=checkout</code>
-      </div>
+          <Button
+            className="mt-4"
+            type="button"
+            onClick={() => setSearchParams({})}
+          >
+            Reset
+          </Button>
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {filtered.map((incident) => (
+            <IncidentCard key={incident.id} incident={incident} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

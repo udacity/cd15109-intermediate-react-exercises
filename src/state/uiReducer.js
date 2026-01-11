@@ -15,16 +15,10 @@ export const UI_ACTIONS = {
 export function uiReducer(state, action) {
   switch (action.type) {
     case UI_ACTIONS.SET_SORT:
-      return {
-        ...state,
-        sort: action.payload,
-      };
+      return { ...state, sort: action.payload };
 
     case UI_ACTIONS.SET_VIEW:
-      return {
-        ...state,
-        view: action.payload,
-      };
+      return { ...state, view: action.payload };
 
     case UI_ACTIONS.TOGGLE_SELECTED: {
       const id = action.payload;
@@ -45,10 +39,7 @@ export function uiReducer(state, action) {
       };
 
     case UI_ACTIONS.CLEAR_SELECTED:
-      return {
-        ...state,
-        selectedIds: [],
-      };
+      return { ...state, selectedIds: [] };
 
     default:
       return state;

@@ -39,6 +39,7 @@ export function RootLayout() {
                 Incidents
               </NavItem>
               <NavItem to="/approvals">Approvals</NavItem>
+              {isAuthenticated && <NavItem to="/profile">Profile</NavItem>}
             </nav>
           </div>
 

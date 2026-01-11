@@ -3,8 +3,8 @@ import { useIncidentQuery } from "@/queries/useIncidentQuery";
 import { useApprovalsQuery } from "@/queries/useApprovalsQuery";
 import { useIncidentActivityQuery } from "@/queries/useIncidentActivityQuery";
 
-export function useIncidents() {
-  return useIncidentsQuery();
+export function useIncidents(filters) {
+  return useIncidentsQuery(filters);
 }
 
 export function useIncident(id) {

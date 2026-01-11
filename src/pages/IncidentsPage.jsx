@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIncidents } from "@/queries/hooks";
 
-const STATUS_OPTIONS = ["all", "open", "investigating", "resolved"];
+const STATUS_OPTIONS = ["all", "open", "triage", "approved"];
 const PRIORITY_OPTIONS = ["all", "low", "medium", "high"];
 
-function normalizeParam(value, allowed, fallback) {
+function normalizeFromList(value, allowed, fallback) {
   if (!value) return fallback;
   return allowed.includes(value) ? value : fallback;
 }
@@ -42,24 +42,24 @@ function IncidentCardSkeleton() {
 export function IncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const status = normalizeParam(
-    searchParams.get("status"),
-    STATUS_OPTIONS,
-    "all"
-  );
-  const priority = normalizeParam(
-    searchParams.get("priority"),
-    PRIORITY_OPTIONS,
-    "all"
-  );
+  const status = normalizeFromList(searchParams.get("status"), STATUS_OPTIONS, "all");
   const q = (searchParams.get("q") ?? "").trim();
 
-  const { data, isPending, isError, error, refetch, isFetching } =
-    useIncidents();
+  const priority = normalizeFromList(searchParams.get("priority"), PRIORITY_OPTIONS, "all");
+
+  const { data, isPending, isError, error, refetch, isFetching } = useIncidents({
+    status,
+    q,
+  });
 
   const incidents = useMemo(() => {
     return Array.isArray(data) ? data : [];
   }, [data]);
+
+  const visible = useMemo(() => {
+    if (priority === "all") return incidents;
+    return incidents.filter((i) => i.priority === priority);
+  }, [incidents, priority]);
 
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams);
@@ -73,24 +73,8 @@ export function IncidentsPage() {
     setSearchParams(next);
   }
 
-  const filtered = useMemo(() => {
-    return incidents.filter((incident) => {
-      const matchesStatus = status === "all" || incident.status === status;
-      const matchesPriority =
-        priority === "all" || incident.priority === priority;
-
-      const matchesQuery =
-        q === "" ||
-        String(incident.id).includes(q) ||
-        (incident.title ?? "").toLowerCase().includes(q.toLowerCase());
-
-      return matchesStatus && matchesPriority && matchesQuery;
-    });
-  }, [incidents, status, priority, q]);
-
   if (isError) {
-    const message =
-      error?.message || "Something went wrong while loading incidents.";
+    const message = error?.message || "Something went wrong while loading incidents.";
     toast.error("Couldn’t load incidents", { description: message });
 
     return (
@@ -113,11 +97,7 @@ export function IncidentsPage() {
               <Button type="button" onClick={() => refetch()}>
                 Retry
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setSearchParams({})}
-              >
+              <Button type="button" variant="secondary" onClick={() => setSearchParams({})}>
                 Clear filters
               </Button>
             </div>
@@ -133,7 +113,7 @@ export function IncidentsPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
           <p className="text-sm text-muted-foreground">
-            Incidents load from the API with React Query.
+            Status and search are synced to the URL and cached by query key. Priority stays a UI filter for now.
           </p>
         </div>
 
@@ -195,64 +175,43 @@ export function IncidentsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">
             Showing{" "}
-            <span className="font-medium text-foreground">
-              {filtered.length}
-            </span>{" "}
-            of{" "}
-            <span className="font-medium text-foreground">
-              {incidents.length}
-            </span>
+            <span className="font-medium text-foreground">{visible.length}</span>
+            {priority !== "all" ? (
+              <>
+                {" "}
+                <span className="text-muted-foreground">after priority filter</span>
+              </>
+            ) : null}
           </div>
 
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={() => setSearchParams({})}
-          >
+          <Button variant="secondary" type="button" onClick={() => setSearchParams({})}>
             Clear filters
           </Button>
         </div>
       </section>
 
       {isPending ? (
-        <div
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-          aria-busy="true"
-        >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
           {Array.from({ length: 6 }).map((_, i) => (
             <IncidentCardSkeleton key={i} />
           ))}
         </div>
-      ) : incidents.length === 0 ? (
-        <div className="grid place-items-center rounded-xl border bg-card p-10 text-center">
-          <div className="max-w-md space-y-2">
-            <div className="text-lg font-semibold">No incidents</div>
-            <div className="text-sm text-muted-foreground">
-              The API returned an empty list.
-            </div>
-          </div>
-        </div>
-      ) : filtered.length === 0 ? (
+      ) : visible.length === 0 ? (
         <div className="grid place-items-center rounded-xl border bg-card p-10 text-center">
           <div className="max-w-md space-y-2">
             <div className="text-lg font-semibold">No incidents found</div>
             <div className="text-sm text-muted-foreground">
-              Try clearing filters, changing status/priority, or adjusting your
-              search.
+              Try changing filters or clearing your search.
             </div>
           </div>
 
-          <Button
-            className="mt-4"
-            type="button"
-            onClick={() => setSearchParams({})}
-          >
+          <Button className="mt-4" type="button" onClick={() => setSearchParams({})}>
             Reset
           </Button>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((incident) => (
+          {visible.map((incident) => (
             <IncidentCard key={incident.id} incident={incident} />
           ))}
         </div>

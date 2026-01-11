@@ -7,5 +7,6 @@ export function useIncidentQuery(id) {
     queryKey: queryKeys.incident(id),
     queryFn: () => fetchIncidentById(id),
     enabled: Boolean(id),
+    staleTime: 60_000,
   });
 }

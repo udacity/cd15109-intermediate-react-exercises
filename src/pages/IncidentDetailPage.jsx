@@ -1,19 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { useIncidentQuery } from "@/queries/useIncidentQuery";
 
 function DetailSkeleton() {
   return (
     <div className="grid gap-3 lg:grid-cols-3" aria-busy="true">
       <Card className="lg:col-span-2">
         <CardHeader>
-          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-6 w-48" />
         </CardHeader>
         <CardContent className="space-y-3">
-          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-4 w-40" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-5/6" />
         </CardContent>
@@ -21,13 +20,12 @@ function DetailSkeleton() {
 
       <Card>
         <CardHeader>
-          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-32" />
         </CardHeader>
         <CardContent className="grid gap-2">
           <Skeleton className="h-9 w-full" />
           <Skeleton className="h-9 w-full" />
           <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-3 w-5/6" />
         </CardContent>
       </Card>
     </div>
@@ -36,58 +34,21 @@ function DetailSkeleton() {
 
 export function IncidentDetailPage() {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
-  const fail = searchParams.get("fail") === "1";
+  const { data, isPending, isError, error } = useIncidentQuery(id);
 
-  const loadKey = useMemo(() => `${id}|${fail}`, [id, fail]);
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isMutating, setIsMutating] = useState(false);
-
-  useEffect(() => {
-    let canceled = false;
-
-    const t = setTimeout(() => {
-      if (canceled) return;
-
-      if (fail) {
-        toast.error("Couldn’t load incident", {
-          description:
-            "This is a simulated failure. Remove ?fail=1 to try again.",
-        });
-      }
-
-      setIsLoading(false);
-    }, 600);
-
-    return () => {
-      canceled = true;
-      clearTimeout(t);
-      setIsLoading(true);
-    };
-  }, [loadKey, fail]);
-
-  async function handleAcknowledge() {
-    setIsMutating(true);
-
-    await new Promise((r) => setTimeout(r, 500));
-
-    setIsMutating(false);
-
-    toast.success("Incident acknowledged", {
-      description: `Incident #${id} was acknowledged successfully.`,
-    });
+  if (isPending) {
+    return <DetailSkeleton />;
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+  if (isError) {
+    return (
+      <div className="space-y-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Incident Detail
+            Incident not found
           </h1>
           <p className="text-sm text-muted-foreground">
-            Loading uses skeletons. Actions show toast feedback.
+            {error?.message || "Unable to load incident."}
           </p>
         </div>
 
@@ -95,56 +56,68 @@ export function IncidentDetailPage() {
           <Link to="/">Back to Incidents</Link>
         </Button>
       </div>
+    );
+  }
 
-      {isLoading ? (
-        <DetailSkeleton />
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-sm">
-                <span className="text-muted-foreground">Incident ID:</span>{" "}
-                <span className="font-medium">#{id}</span>
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                We’ll fetch and render real incident data later. For now, this
-                establishes skeleton loading + toast feedback patterns.
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <Button
-                type="button"
-                onClick={handleAcknowledge}
-                disabled={isMutating}
-              >
-                {isMutating ? "Working…" : "Acknowledge"}
-              </Button>
-
-              <Button type="button" variant="secondary" disabled>
-                Assign
-              </Button>
-
-              <Button type="button" variant="destructive" disabled>
-                Escalate
-              </Button>
-
-              <p className="text-xs text-muted-foreground">
-                Only “Acknowledge” is wired for toast feedback right now.
-              </p>
-            </CardContent>
-          </Card>
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Incident #{data.id}
+          </h1>
+          <p className="text-sm text-muted-foreground">{data.title}</p>
         </div>
-      )}
+
+        <Button asChild variant="secondary">
+          <Link to="/">Back to Incidents</Link>
+        </Button>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm">
+              <span className="text-muted-foreground">Status:</span>{" "}
+              <span className="font-medium capitalize">{data.status}</span>
+            </div>
+
+            <div className="text-sm">
+              <span className="text-muted-foreground">Priority:</span>{" "}
+              <span className="font-medium capitalize">{data.priority}</span>
+            </div>
+
+            <div className="text-sm text-muted-foreground">
+              This page is powered by a dedicated React Query hook and will
+              later be extended with real metadata, comments, and activity
+              history.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Timeline</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <div>• Incident created</div>
+            <div>• Status updated</div>
+            <div>• Assignment pending</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Comments</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          Comments and discussion will be implemented in a later step.
+        </CardContent>
+      </Card>
     </div>
   );
 }

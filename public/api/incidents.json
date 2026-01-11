@@ -1,0 +1,32 @@
+[
+  {
+    "id": 41,
+    "title": "Checkout button unresponsive",
+    "status": "open",
+    "priority": "high"
+  },
+  {
+    "id": 42,
+    "title": "Mobile layout overlap on iOS",
+    "status": "open",
+    "priority": "medium"
+  },
+  {
+    "id": 7,
+    "title": "PDF export fails intermittently",
+    "status": "investigating",
+    "priority": "high"
+  },
+  {
+    "id": 13,
+    "title": "Notification delay",
+    "status": "resolved",
+    "priority": "low"
+  },
+  {
+    "id": 19,
+    "title": "Search indexing backlog",
+    "status": "investigating",
+    "priority": "medium"
+  }
+]

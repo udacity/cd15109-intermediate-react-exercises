@@ -1,0 +1,14 @@
+[
+  { "id": "evt_1", "incidentId": 41, "type": "created", "message": "Incident created", "at": "2026-01-10T18:12:00Z" },
+  { "id": "evt_2", "incidentId": 41, "type": "comment", "message": "Customer reports issue is intermittent", "at": "2026-01-10T18:25:00Z" },
+  { "id": "evt_3", "incidentId": 41, "type": "status", "message": "Status changed to investigating", "at": "2026-01-10T19:02:00Z" },
+
+  { "id": "evt_4", "incidentId": 42, "type": "created", "message": "Incident created", "at": "2026-01-09T16:40:00Z" },
+  { "id": "evt_5", "incidentId": 42, "type": "comment", "message": "iOS Safari layout overlaps header", "at": "2026-01-09T17:05:00Z" },
+
+  { "id": "evt_6", "incidentId": 7, "type": "created", "message": "Incident created", "at": "2026-01-05T10:10:00Z" },
+  { "id": "evt_7", "incidentId": 7, "type": "status", "message": "Status changed to investigating", "at": "2026-01-05T11:00:00Z" },
+
+  { "id": "evt_8", "incidentId": 13, "type": "created", "message": "Incident created", "at": "2026-01-02T08:15:00Z" },
+  { "id": "evt_9", "incidentId": 13, "type": "status", "message": "Status changed to resolved", "at": "2026-01-02T09:30:00Z" }
+]

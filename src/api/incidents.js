@@ -14,3 +14,14 @@ export async function fetchIncidentById(id) {
 
   return incident;
 }
+
+export async function fetchIncidentActivityById(id) {
+  const all = await apiGet("/api/incident-activity.json");
+  const incidentId = Number(id);
+
+  if (!Number.isFinite(incidentId)) {
+    throw new Error("Invalid incident id");
+  }
+
+  return Array.isArray(all) ? all.filter((e) => e.incidentId === incidentId) : [];
+}

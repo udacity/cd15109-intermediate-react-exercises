@@ -1,0 +1,26 @@
+/* Reset */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Center the entire app */
+body {
+  display: flex;
+  align-items: center; /* vertical center */
+  justify-content: center; /* horizontal center */
+  background-color: #f5f5f5;
+  font-family: system-ui, sans-serif;
+}
+
+/* Optional: card-style container */
+#root > div {
+  width: 100%;
+  max-width: 720px;
+}

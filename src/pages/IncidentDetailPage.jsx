@@ -18,9 +18,12 @@ export function IncidentDetailPage() {
 
   const incident = incidentQuery.data;
 
-  const commentCount = useMemo(() => {
+  const comments = useMemo(() => {
     const activity = activityQuery.data ?? [];
-    return activity.filter((e) => e.type === "comment").length;
+    return activity
+      .filter((e) => e.type === "comment")
+      .slice()
+      .sort((a, b) => String(a.at ?? "").localeCompare(String(b.at ?? "")));
   }, [activityQuery.data]);
 
   if (incidentQuery.isLoading) {
@@ -28,11 +31,7 @@ export function IncidentDetailPage() {
   }
 
   if (incidentQuery.isError) {
-    return (
-      <div className="text-sm text-destructive">
-        Failed to load incident.
-      </div>
-    );
+    return <div className="text-sm text-destructive">Failed to load incident.</div>;
   }
 
   return (
@@ -72,11 +71,27 @@ export function IncidentDetailPage() {
             </Button>
           </div>
 
-          <div className="text-xs text-muted-foreground">
-            {commentCount === 0
-              ? "No comments yet."
-              : `${commentCount} comment${commentCount === 1 ? "" : "s"} found in activity.`}
-          </div>
+          {activityQuery.isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ) : activityQuery.isError ? (
+            <div className="text-xs text-destructive">Failed to load activity.</div>
+          ) : comments.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No comments yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {comments.map((c) => (
+                <div key={c.id} className="rounded-md border bg-card p-3 text-sm">
+                  <div className="text-xs text-muted-foreground">
+                    {c.at ? new Date(c.at).toLocaleString() : "Just now"}
+                  </div>
+                  <div className="mt-1">{c.message}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,8 +1,10 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const INCIDENTS = [
   {
@@ -40,6 +42,30 @@ function normalizeParam(value, allowed, fallback) {
   return allowed.includes(value) ? value : fallback;
 }
 
+function IncidentCardSkeleton() {
+  return (
+    <div className="rounded-xl border bg-card p-4">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-5 w-56" />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function IncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -54,6 +80,32 @@ export function IncidentsPage() {
     "all"
   );
   const q = (searchParams.get("q") ?? "").trim();
+  const fail = searchParams.get("fail") === "1";
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let canceled = false;
+
+    const t = setTimeout(() => {
+      if (canceled) return;
+
+      if (fail) {
+        toast.error("Couldn’t load incidents", {
+          description:
+            "This is a simulated failure. Remove ?fail=1 to try again.",
+        });
+      }
+
+      setIsLoading(false);
+    }, 650);
+
+    return () => {
+      canceled = true;
+      clearTimeout(t);
+      setIsLoading(true);
+    };
+  }, [fail]);
 
   function updateParam(key, value) {
     const next = new URLSearchParams(searchParams);
@@ -87,11 +139,10 @@ export function IncidentsPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
         <p className="text-sm text-muted-foreground">
-          URL-driven filters support refresh, history, and shareable links.
+          Loading states use skeletons, and failures show a toast.
         </p>
       </div>
 
-      {/* Filters */}
       <section className="grid gap-3 rounded-xl border bg-card p-4">
         <div className="grid gap-3 md:grid-cols-6 md:items-end">
           <label className="grid gap-1 md:col-span-2">
@@ -146,18 +197,40 @@ export function IncidentsPage() {
             </span>
           </div>
 
-          <Button
-            variant="secondary"
-            type="button"
-            onClick={() => setSearchParams({})}
-          >
-            Clear filters
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => setSearchParams({})}
+            >
+              Clear filters
+            </Button>
+
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                next.set("fail", "1");
+                setSearchParams(next);
+              }}
+            >
+              Simulate load failure
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/* Results */}
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          aria-busy="true"
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <IncidentCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="grid place-items-center rounded-xl border bg-card p-10 text-center">
           <div className="max-w-md space-y-2">
             <div className="text-lg font-semibold">No incidents found</div>

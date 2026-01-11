@@ -19,7 +19,7 @@ export function IncidentCard({ incident, selected, onToggleSelect }) {
 
   return (
     <Card
-      className={`transition-shadow ${
+      className={`cursor-pointer transition-shadow hover:shadow-sm ${
         selected ? "ring-2 ring-ring" : ""
       }`}
       onClick={onToggleSelect}
@@ -30,9 +30,7 @@ export function IncidentCard({ incident, selected, onToggleSelect }) {
             <div className="text-xs text-muted-foreground">
               Incident #{incident.id}
             </div>
-            <div className="text-base font-semibold">
-              {incident.title}
-            </div>
+            <div className="text-base font-semibold">{incident.title}</div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -44,7 +42,7 @@ export function IncidentCard({ incident, selected, onToggleSelect }) {
 
       <CardContent className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          View incident details
+          {selected ? "Selected" : "Click to select"}
         </div>
 
         <Link

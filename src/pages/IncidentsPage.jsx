@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
@@ -10,12 +10,7 @@ import { useIncidents } from "@/queries/hooks";
 import { useCreateIncident } from "@/queries/mutations";
 import { useAppDispatch } from "@/state/AppStateProvider";
 import { UI_ACTIONS } from "@/state/uiReducer";
-import {
-  useQueueStats,
-  useSelectedIds,
-  useSortMode,
-  useViewMode,
-} from "@/state/selectorHooks";
+import { useQueueStats, useSelectedIds, useSortMode, useViewMode } from "@/state/selectorHooks";
 
 const STATUS_OPTIONS = ["all", "open", "triage", "approved"];
 const SORT_OPTIONS = ["newest", "oldest", "priority"];
@@ -55,6 +50,10 @@ export function IncidentsPage() {
     });
   }, [isError, error]);
 
+  const selectedIdSet = useMemo(() => {
+    return new Set((selectedIds || []).map((x) => String(x)));
+  }, [selectedIds]);
+
   const sorted = useMemo(() => {
     if (!Array.isArray(data)) return [];
     const list = [...data];
@@ -66,32 +65,56 @@ export function IncidentsPage() {
     return list;
   }, [data, sort]);
 
-  function updateParam(key, value) {
-    const next = new URLSearchParams(searchParams);
-    if (!value || value === "all") next.delete(key);
-    else next.set(key, value);
-    setSearchParams(next);
-  }
+  const updateParam = useCallback(
+    (key, value) => {
+      const next = new URLSearchParams(searchParams);
+      if (!value || value === "all") next.delete(key);
+      else next.set(key, value);
+      setSearchParams(next);
+    },
+    [searchParams, setSearchParams]
+  );
 
-  function setView(nextView) {
-    dispatch({ type: UI_ACTIONS.SET_VIEW, payload: nextView });
-  }
+  const setView = useCallback(
+    (nextView) => {
+      dispatch({ type: UI_ACTIONS.SET_VIEW, payload: nextView });
+    },
+    [dispatch]
+  );
 
-  function setSort(nextSort) {
-    dispatch({ type: UI_ACTIONS.SET_SORT, payload: nextSort });
-  }
+  const setSort = useCallback(
+    (nextSort) => {
+      dispatch({ type: UI_ACTIONS.SET_SORT, payload: nextSort });
+    },
+    [dispatch]
+  );
 
-  function clearSelection() {
+  const clearSelection = useCallback(() => {
     dispatch({ type: UI_ACTIONS.CLEAR_SELECTED });
-  }
+  }, [dispatch]);
+
+  const toggleSelectById = useCallback(
+    (id) => {
+      dispatch({ type: UI_ACTIONS.TOGGLE_SELECTED, payload: id });
+    },
+    [dispatch]
+  );
+
+  const onNewTitleChange = useCallback((e) => {
+    setNewTitle(e.target.value);
+  }, []);
+
+  const onCreate = useCallback(() => {
+    if (!newTitle || createMutation.isPending) return;
+    createMutation.mutate({ title: newTitle });
+    setNewTitle("");
+  }, [newTitle, createMutation]);
 
   return (
     <div className="space-y-5">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
-        <p className="text-sm text-muted-foreground">
-          Mutations model user-initiated writes with clear loading and feedback.
-        </p>
+        <p className="text-sm text-muted-foreground">Mutations model user-initiated writes with clear loading and feedback.</p>
       </div>
 
       <Card className="p-4">
@@ -99,17 +122,11 @@ export function IncidentsPage() {
           <Input
             placeholder="New incident title"
             value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
+            onChange={onNewTitleChange}
             disabled={createMutation.isPending}
           />
-          <Button
-            disabled={!newTitle || createMutation.isPending}
-            onClick={() => {
-              createMutation.mutate({ title: newTitle });
-              setNewTitle("");
-            }}
-          >
-            Create
+          <Button disabled={!newTitle || createMutation.isPending} onClick={onCreate}>
+            {createMutation.isPending ? "Creating…" : "Create"}
           </Button>
         </div>
       </Card>
@@ -124,11 +141,7 @@ export function IncidentsPage() {
           </Button>
         </div>
 
-        <select
-          className="h-9 rounded-md border bg-background px-3 text-sm"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
+        <select className="h-9 rounded-md border bg-background px-3 text-sm" value={sort} onChange={(e) => setSort(e.target.value)}>
           {SORT_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
@@ -156,24 +169,20 @@ export function IncidentsPage() {
           ))}
         </div>
       ) : sorted.length === 0 ? (
-        <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-          No incidents found.
-        </div>
+        <div className="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">No incidents found.</div>
       ) : (
         <div className={view === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "space-y-3"}>
-          {sorted.map((incident) => (
-            <IncidentCard
-              key={incident.id}
-              incident={incident}
-              selected={selectedIds.includes(incident.id)}
-              onToggleSelect={() =>
-                dispatch({
-                  type: UI_ACTIONS.TOGGLE_SELECTED,
-                  payload: incident.id,
-                })
-              }
-            />
-          ))}
+          {sorted.map((incident) => {
+            const isSelected = selectedIdSet.has(String(incident.id));
+            return (
+              <IncidentCard
+                key={incident.id}
+                incident={incident}
+                selected={isSelected}
+                onToggleSelect={toggleSelectById}
+              />
+            );
+          })}
         </div>
       )}
 

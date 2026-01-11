@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { IncidentCard } from "@/components/incidents/IncidentCard";
@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIncidents } from "@/queries/hooks";
-import { uiReducer, initialUiState, UI_ACTIONS } from "@/state/uiReducer";
+import { UI_ACTIONS } from "@/state/uiReducer";
 import { getSelectedCount } from "@/state/uiSelectors";
+import { useAppDispatch, useAppState } from "@/state/AppStateProvider";
 
 const STATUS_OPTIONS = ["all", "open", "triage", "approved"];
 const PRIORITY_OPTIONS = ["all", "low", "medium", "high"];
@@ -42,7 +43,9 @@ function priorityRank(priority) {
 
 export function IncidentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [uiState, dispatch] = useReducer(uiReducer, initialUiState);
+
+  const uiState = useAppState();
+  const dispatch = useAppDispatch();
 
   const status = normalizeFromList(searchParams.get("status"), STATUS_OPTIONS, "all");
   const priority = normalizeFromList(searchParams.get("priority"), PRIORITY_OPTIONS, "all");
@@ -125,7 +128,7 @@ export function IncidentsPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
           <p className="text-sm text-muted-foreground">
-            UI preferences live in a reducer. Server data stays in React Query.
+            Shared UI state is now provided by context instead of prop drilling.
           </p>
         </div>
 

@@ -83,21 +83,21 @@ export function IncidentsPage() {
   }, [status, priority, q]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold leading-tight">Incidents</h1>
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Incidents</h1>
         <p className="text-sm text-muted-foreground">
-          Filters are URL-driven. Try refresh, back/forward, or copy the URL.
+          URL-driven filters support refresh, history, and shareable links.
         </p>
       </div>
 
       {/* Filters */}
       <section className="grid gap-3 rounded-xl border bg-card p-4">
-        <div className="grid gap-3 md:grid-cols-4 md:items-end">
-          <label className="grid gap-1">
+        <div className="grid gap-3 md:grid-cols-6 md:items-end">
+          <label className="grid gap-1 md:col-span-2">
             <span className="text-sm font-medium">Status</span>
             <select
-              className="h-9 rounded-md border bg-background px-3 text-sm"
+              className="h-9 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={status}
               onChange={(e) => updateParam("status", e.target.value)}
             >
@@ -109,10 +109,10 @@ export function IncidentsPage() {
             </select>
           </label>
 
-          <label className="grid gap-1">
+          <label className="grid gap-1 md:col-span-2">
             <span className="text-sm font-medium">Priority</span>
             <select
-              className="h-9 rounded-md border bg-background px-3 text-sm"
+              className="h-9 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={priority}
               onChange={(e) => updateParam("priority", e.target.value)}
             >
@@ -134,7 +134,7 @@ export function IncidentsPage() {
           </label>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">
             Showing{" "}
             <span className="font-medium text-foreground">
@@ -159,10 +159,11 @@ export function IncidentsPage() {
       {/* Results */}
       {filtered.length === 0 ? (
         <div className="grid place-items-center rounded-xl border bg-card p-10 text-center">
-          <div className="space-y-2">
+          <div className="max-w-md space-y-2">
             <div className="text-lg font-semibold">No incidents found</div>
             <div className="text-sm text-muted-foreground">
-              Try clearing filters or adjusting your search.
+              Try clearing filters, changing status/priority, or adjusting your
+              search.
             </div>
           </div>
 
@@ -175,7 +176,7 @@ export function IncidentsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((incident) => (
             <IncidentCard key={incident.id} incident={incident} />
           ))}

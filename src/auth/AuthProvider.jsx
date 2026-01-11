@@ -14,18 +14,24 @@ function normalizeUser(user) {
   return id ? { id, name: name ?? "User", role: role ?? "member" } : null;
 }
 
+function loadInitialSession() {
+  return loadAuthSession();
+}
+
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(() => loadAuthSession());
+  const [session, setSession] = useState(loadInitialSession);
 
   const token = session.token ?? null;
   const user = normalizeUser(session.user);
   const isAuthenticated = Boolean(token);
+  const isResolving = false;
 
   function login(next) {
     const nextToken = typeof next?.token === "string" ? next.token : null;
     const nextUser = normalizeUser(next?.user);
 
-    setSession({ token: nextToken, user: nextUser });
+    const nextSession = { token: nextToken, user: nextUser };
+    setSession(nextSession);
 
     if (nextToken && nextUser) saveAuthSession({ token: nextToken, user: nextUser });
     else clearAuthSession();
@@ -53,23 +59,24 @@ export function AuthProvider({ children }) {
     window.__AUTH__ = {
       login,
       logout,
-      getSession: () => ({ token, user, isAuthenticated }),
+      getSession: () => ({ token, user, isAuthenticated, isResolving }),
     };
 
     return () => {
       delete window.__AUTH__;
     };
-  }, [token, user, isAuthenticated]);
+  }, [token, user, isAuthenticated, isResolving]);
 
   const value = useMemo(() => {
     return {
       token,
       user,
       isAuthenticated,
+      isResolving,
       login,
       logout,
     };
-  }, [token, user, isAuthenticated]);
+  }, [token, user, isAuthenticated, isResolving]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

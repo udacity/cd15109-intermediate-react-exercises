@@ -4,12 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ProtectedRoute({ children, title = "Approvals" }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isResolving } = useAuth();
   const location = useLocation();
 
-  if (isAuthenticated) return children;
+  if (isResolving) {
+    return (
+      <div className="mx-auto max-w-xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Loading…</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            Checking your session…
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-  const redirect = encodeURIComponent(location.pathname + location.search);
+  if (isAuthenticated) return children;
 
   return (
     <div className="mx-auto max-w-xl">
@@ -19,12 +32,15 @@ export function ProtectedRoute({ children, title = "Approvals" }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            You must be signed in to view <span className="font-medium text-foreground">{title}</span>.
+            You must be signed in to view{" "}
+            <span className="font-medium text-foreground">{title}</span>.
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild>
-              <NavLink to={`/login?redirect=${redirect}`}>Go to Login</NavLink>
+              <NavLink to="/login" state={{ from: location }}>
+                Go to Login
+              </NavLink>
             </Button>
 
             <Button asChild variant="secondary">

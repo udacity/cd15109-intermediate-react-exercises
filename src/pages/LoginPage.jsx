@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,21 @@ function fakeAuth(email, password) {
   };
 }
 
+function toPath(fromLocation) {
+  if (!fromLocation) return "/";
+  const pathname = typeof fromLocation.pathname === "string" ? fromLocation.pathname : "/";
+  const search = typeof fromLocation.search === "string" ? fromLocation.search : "";
+  const hash = typeof fromLocation.hash === "string" ? fromLocation.hash : "";
+  return `${pathname}${search}${hash}`;
+}
+
 export function LoginPage() {
   const { isAuthenticated, user, login, logout } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
 
-  const redirectTo = useMemo(() => searchParams.get("redirect") || "/", [searchParams]);
+  const from = location.state?.from;
+  const redirectTo = useMemo(() => toPath(from), [from]);
 
   const [email, setEmail] = useState("casey@example.com");
   const [password, setPassword] = useState("");

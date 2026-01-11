@@ -8,6 +8,8 @@ import { queryKeys } from "@/queries/queryKeys";
 import { fetchIncidentById } from "@/api/incidents";
 
 function IncidentCardImpl({ incident, selected, onToggleSelect }) {
+  console.count(`IncidentCard render: ${incident.id}`);
+  
   const queryClient = useQueryClient();
 
   const prefetch = useCallback(() => {

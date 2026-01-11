@@ -1,7 +1,7 @@
-import { apiGet } from "./client";
+import { apiFetch } from "./client";
 
 export async function fetchIncidents() {
-  return apiGet("/api/incidents.json");
+  return apiFetch("/api/incidents.json");
 }
 
 export async function fetchIncidentById(id) {
@@ -16,7 +16,7 @@ export async function fetchIncidentById(id) {
 }
 
 export async function fetchIncidentActivityById(id) {
-  const all = await apiGet("/api/incident-activity.json");
+  const all = await apiFetch("/api/incident-activity.json");
   const incidentId = Number(id);
 
   if (!Number.isFinite(incidentId)) {

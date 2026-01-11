@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AuthContext } from "@/auth/authContext";
 import { clearAuthSession, loadAuthSession, saveAuthSession } from "@/auth/authStorage";
+import { registerUnauthorizedHandler } from "@/auth/authBridge";
+import { queryClient } from "@/queries/queryClient";
 
 function normalizeUser(user) {
   if (!user || typeof user !== "object") return null;
@@ -32,7 +34,18 @@ export function AuthProvider({ children }) {
   function logout() {
     setSession({ token: null, user: null });
     clearAuthSession();
+    queryClient.clear();
   }
+
+  useEffect(() => {
+    registerUnauthorizedHandler(() => {
+      logout();
+    });
+
+    return () => {
+      registerUnauthorizedHandler(null);
+    };
+  }, []);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
